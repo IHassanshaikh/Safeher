@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SAFE HER — AI Support Bot</title>
+<style>
+  body {
+    background: linear-gradient(135deg, #0a0f22, #1b2338);
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .chat-container {
+    width: 420px;
+    background: #141a2a;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 0 25px rgba(233,30,99,0.3);
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+  }
+  .header {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #E91E63;
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+  }
+  .msg {
+    margin: 8px 0;
+    max-width: 85%;
+    line-height: 1.4;
+    padding: 10px 14px;
+    border-radius: 12px;
+  }
+  .user {
+    background: #E91E63;
+    align-self: flex-end;
+  }
+  .bot {
+    background: #2a3350;
+    align-self: flex-start;
+  }
+  .input-area {
+    display: flex;
+    gap: 8px;
+  }
+  input {
+    flex: 1;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+  }
+  button {
+    background: #E91E63;
+    border: none;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { opacity: 0.9; }
+</style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="header">SAFE HER 💗</div>
+    <div id="messages" class="messages"></div>
+    <div class="input-area">
+      <input id="input" placeholder="Type or speak..." />
+      <button onclick="send()">Send</button>
+      <button onclick="recordVoice()">🎙</button>
+    </div>
+  </div>
+
+<script>
+const WEBHOOK_URL = "https://teachers-corner.com/webhook/7c6cd847-e647-4450-98e9-ac40b5b94964"; // ← replace later
+
+function append(role, text) {
+  const msgBox = document.createElement("div");
+  msgBox.className = `msg ${role}`;
+  msgBox.textContent = text;
+  document.getElementById("messages").appendChild(msgBox);
+  msgBox.scrollIntoView({behavior:"smooth"});
+}
+
+async function send() {
+  const input = document.getElementById("input");
+  const text = input.value.trim();
+  if (!text) return;
+  append("user", text);
+  input.value = "";
+
+  const res = await fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text, isVoice: false })
+  });
+  const data = await res.json();
+  append("bot", data.reply || "Sorry, I'm offline right now.");
+}
+
+// 🎙 Voice recognition using Web Speech API (free)
+function recordVoice() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Speech recognition not supported in this browser.");
+    return;
+  }
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.onstart = () => append("bot", "🎤 Listening...");
+  recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript;
+    append("user", transcript);
+    const res = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: transcript, isVoice: true })
+    });
+    const data = await res.json();
+    append("bot", data.reply || "Sorry, I'm offline right now.");
+  };
+  recognition.onerror = () => append("bot", "⚠️ Couldn't capture voice. Try again.");
+  recognition.start();
+}
+</script>
+</body>
+</html>
+
+
